@@ -1,8 +1,8 @@
 export type WorkoutType = 'aerobic' | 'anaerobic'
 
-export type BodyPart = '肩' | '背' | '臀' | '腿' | '腹'
+export type BodyPart = '肩' | '背' | '臀' | '腿' | '腹' | '手臂'
 
-export const BODY_PARTS: BodyPart[] = ['肩', '背', '臀', '腿', '腹']
+export const BODY_PARTS: BodyPart[] = ['肩', '背', '臀', '腿', '腹', '手臂']
 
 export interface CheckIn {
   id: string
