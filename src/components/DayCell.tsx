@@ -42,12 +42,11 @@ export default function DayCell({
       type="button"
       onClick={onClick}
       className={[
-        'flex min-h-[72px] flex-col rounded-lg border p-1.5 text-left transition active:scale-[0.98]',
+        'flex min-h-[72px] flex-col rounded-lg p-1.5 text-left transition active:scale-[0.98]',
         inMonth
-          ? 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
-          : 'border-transparent bg-slate-50/60 opacity-40 dark:bg-slate-900/40',
+          ? 'bg-white dark:bg-slate-800'
+          : 'bg-transparent opacity-40',
         isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
-        records.length > 0 ? 'shadow-sm' : '',
       ].join(' ')}
     >
       <div className="mb-1 flex items-center justify-between">
