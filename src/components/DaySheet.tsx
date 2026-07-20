@@ -257,12 +257,15 @@ function RecordItem({
 interface DaySheetProps {
   date: string
   onClose: () => void
+  /** 打开时直接进入新增表单，保存/取消后关闭弹层 */
+  initialMode?: 'list' | 'add'
 }
 
-export function DaySheet({ date, onClose }: DaySheetProps) {
+export function DaySheet({ date, onClose, initialMode = 'list' }: DaySheetProps) {
   const records = useCheckInsByDate(date)
-  const [mode, setMode] = useState<'list' | 'add' | 'edit'>('list')
+  const [mode, setMode] = useState<'list' | 'add' | 'edit'>(initialMode)
   const [editing, setEditing] = useState<CheckIn | null>(null)
+  const quickAdd = initialMode === 'add'
 
   const handleDelete = async (id: string) => {
     if (!confirm('确定删除这条记录？')) return
@@ -272,6 +275,15 @@ export function DaySheet({ date, onClose }: DaySheetProps) {
     } catch {
       alert('删除失败，请重试')
     }
+  }
+
+  const finishForm = () => {
+    if (quickAdd) {
+      onClose()
+      return
+    }
+    setMode('list')
+    setEditing(null)
   }
 
   return (
@@ -285,8 +297,12 @@ export function DaySheet({ date, onClose }: DaySheetProps) {
       <div className="relative z-10 w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl dark:bg-slate-900 sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold">{formatDisplayDate(date)}</h2>
-            <p className="text-sm text-slate-500">{records.length} 条打卡记录</p>
+            <h2 className="text-lg font-semibold">
+              {quickAdd && mode === 'add' ? '新增今日打卡' : formatDisplayDate(date)}
+            </h2>
+            {!quickAdd && (
+              <p className="text-sm text-slate-500">{records.length} 条打卡记录</p>
+            )}
           </div>
           <button
             type="button"
@@ -328,14 +344,8 @@ export function DaySheet({ date, onClose }: DaySheetProps) {
           <CheckInForm
             date={date}
             initial={mode === 'edit' ? editing ?? undefined : undefined}
-            onDone={() => {
-              setMode('list')
-              setEditing(null)
-            }}
-            onCancel={() => {
-              setMode('list')
-              setEditing(null)
-            }}
+            onDone={finishForm}
+            onCancel={finishForm}
           />
         )}
       </div>

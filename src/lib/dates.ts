@@ -88,3 +88,8 @@ export function getWeekRange(): { start: string; end: string } {
 export function isDateInRange(date: string, start: string, end: string): boolean {
   return date >= start && date <= end
 }
+
+export function shiftMonth(year: number, month: number, delta: number) {
+  const date = new Date(year, month - 1 + delta, 1)
+  return { year: date.getFullYear(), month: date.getMonth() + 1 }
+}
