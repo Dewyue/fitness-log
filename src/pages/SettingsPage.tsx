@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { clearAllCheckIns, getStorageBackend, notifyLocalStorageChange } from '../db'
+import { clearAppCacheAndReload } from '../lib/cache'
 import {
   copyBackupToClipboard,
   downloadBackup,
@@ -134,6 +135,20 @@ export default function SettingsPage() {
           {message}
         </div>
       )}
+
+      <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+        <h2 className="font-medium">界面还是旧的？</h2>
+        <p className="text-sm text-slate-500">
+          若日历仍显示有氧卡路里，说明浏览器缓存了旧版本。点击下方会清除缓存并加载最新页面（不会删除打卡数据）。
+        </p>
+        <button
+          type="button"
+          onClick={() => clearAppCacheAndReload()}
+          className="w-full rounded-xl border border-emerald-300 py-3 text-sm font-medium text-emerald-700 dark:border-emerald-800 dark:text-emerald-300"
+        >
+          清除缓存并更新到最新版
+        </button>
+      </section>
 
       <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
         <h2 className="font-medium">跨设备同步（推荐）</h2>
