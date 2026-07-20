@@ -8,19 +8,16 @@ interface DayCellProps {
   onClick: () => void
 }
 
-function summarizeRecords(records: CheckIn[]): string[] {
-  const lines: string[] = []
-  for (const record of records) {
-    if (record.type === 'aerobic') {
-      lines.push(`${record.calories ?? 0}kcal`)
-      if (record.durationMinutes) {
-        lines.push(`${record.durationMinutes}分`)
-      }
-    } else {
-      lines.push(record.parts?.join('·') ?? '无氧')
-    }
+function summarizeRecords(records: CheckIn[]): { lines: string[]; extra: number } {
+  const anaerobicLines = records
+    .filter((record) => record.type === 'anaerobic')
+    .map((record) => record.parts?.join('·') ?? '')
+    .filter(Boolean)
+
+  return {
+    lines: anaerobicLines.slice(0, 2),
+    extra: Math.max(0, anaerobicLines.length - 2),
   }
-  return lines.slice(0, 2)
 }
 
 export default function DayCell({
@@ -32,7 +29,7 @@ export default function DayCell({
 }: DayCellProps) {
   const hasAerobic = records.some((r) => r.type === 'aerobic')
   const hasAnaerobic = records.some((r) => r.type === 'anaerobic')
-  const summary = summarizeRecords(records)
+  const { lines: summary, extra } = summarizeRecords(records)
 
   return (
     <button
@@ -73,8 +70,8 @@ export default function DayCell({
             {line}
           </span>
         ))}
-        {records.length > 2 && (
-          <span className="text-[10px] text-slate-400">+{records.length - 2}</span>
+        {extra > 0 && (
+          <span className="text-[10px] text-slate-400">+{extra}</span>
         )}
       </div>
     </button>
