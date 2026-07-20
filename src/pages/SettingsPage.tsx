@@ -15,9 +15,11 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false)
   const [storageBackend, setStorageBackend] = useState('')
   const [pasteText, setPasteText] = useState('')
+  const [pageUrl, setPageUrl] = useState('')
 
   useEffect(() => {
     setStorageBackend(getStorageBackend())
+    setPageUrl(window.location.origin + window.location.pathname)
   }, [])
 
   const showMessage = (text: string) => {
@@ -113,7 +115,17 @@ export default function SettingsPage() {
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
         <p className="font-medium">手机和电脑不会自动同步</p>
         <p className="mt-1 text-xs leading-relaxed opacity-90">
-          每台设备的数据各自存在本机浏览器里。要在手机与电脑之间同步，请在一端「复制/导出」后，在另一端「粘贴/导入」。建议使用「合并导入」保留两边记录。
+          每台设备、每个网址的数据各自存在本机浏览器里。要在手机与电脑之间同步，请在一端「复制/导出」后，在另一端「粘贴/导入」。建议使用「合并导入」保留两边记录。
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+        <p className="font-medium">换网址 = 新空白数据</p>
+        <p className="mt-1 text-xs leading-relaxed opacity-90">
+          当前地址：<span className="break-all font-mono">{pageUrl || '…'}</span>
+        </p>
+        <p className="mt-2 text-xs leading-relaxed opacity-90">
+          若你之前在局域网地址（如 192.168.x.x）或旧书签里记过数据，那些数据仍留在原来的浏览器里，不会自动出现在 GitHub 网址下。请回到旧地址 → 数据页导出 → 再在本页导入。
         </p>
       </div>
 

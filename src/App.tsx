@@ -1,4 +1,5 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
+import UpdatePrompt from './components/UpdatePrompt'
 import CalendarPage from './pages/CalendarPage'
 import SettingsPage from './pages/SettingsPage'
 
@@ -24,6 +25,7 @@ function NavItem({ to, label, icon }: { to: string; label: string; icon: string 
 export default function App() {
   return (
     <div className="mx-auto flex min-h-full max-w-[430px] flex-col">
+      <UpdatePrompt />
       <main className="flex-1 px-4 pb-24 pt-4">
         <Routes>
           <Route path="/" element={<CalendarPage />} />
