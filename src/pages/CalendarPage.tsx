@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react'
 import { DaySheet } from '../components/DaySheet'
-import MonthCalendar from '../components/MonthCalendar'
+import MonthCalendar, { WeekdayHeader } from '../components/MonthCalendar'
 import { useCheckInsByMonth } from '../hooks/useCheckIns'
 import { formatDate, formatMonthLabel, shiftMonth } from '../lib/dates'
 
 const SWIPE_THRESHOLD = 56
-const ANIMATION_MS = 280
+const ANIMATION_MS = 300
 
 export default function CalendarPage() {
   const now = new Date()
@@ -22,6 +22,7 @@ export default function CalendarPage() {
   const dragging = useRef(false)
   const pendingDir = useRef<'prev' | 'next' | null>(null)
   const locked = useRef(false)
+  const dragOffsetRef = useRef(0)
 
   const prev = shiftMonth(year, month, -1)
   const next = shiftMonth(year, month, 1)
@@ -32,10 +33,17 @@ export default function CalendarPage() {
 
   const today = formatDate(new Date())
 
-  const applyMonth = (dir: 'prev' | 'next') => {
+  const finishSwitch = (dir: 'prev' | 'next') => {
     const target = shiftMonth(year, month, dir === 'next' ? 1 : -1)
+    // 先关掉动画，再同时复位偏移并换月，避免中间闪一帧旧内容
+    setAnimating(false)
+    setDragOffset(0)
+    dragOffsetRef.current = 0
     setYear(target.year)
     setMonth(target.month)
+    locked.current = false
+    dragging.current = false
+    pendingDir.current = null
   }
 
   const animateTo = (dir: 'prev' | 'next' | 'cancel') => {
@@ -47,21 +55,24 @@ export default function CalendarPage() {
     if (dir === 'cancel') {
       pendingDir.current = null
       setDragOffset(0)
-    } else {
-      pendingDir.current = dir
-      setDragOffset(dir === 'next' ? -width : width)
+      dragOffsetRef.current = 0
+      window.setTimeout(() => {
+        setAnimating(false)
+        locked.current = false
+        dragging.current = false
+      }, ANIMATION_MS)
+      return
     }
 
+    pendingDir.current = dir
+    const targetOffset = dir === 'next' ? -width : width
+    setDragOffset(targetOffset)
+    dragOffsetRef.current = targetOffset
+
     window.setTimeout(() => {
-      const pending = pendingDir.current
-      pendingDir.current = null
-      setAnimating(false)
-      if (pending) {
-        applyMonth(pending)
+      if (pendingDir.current) {
+        finishSwitch(pendingDir.current)
       }
-      setDragOffset(0)
-      locked.current = false
-      dragging.current = false
     }, ANIMATION_MS)
   }
 
@@ -74,6 +85,7 @@ export default function CalendarPage() {
     setYear(d.getFullYear())
     setMonth(d.getMonth() + 1)
     setDragOffset(0)
+    dragOffsetRef.current = 0
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -99,6 +111,7 @@ export default function CalendarPage() {
       dragging.current = true
     }
 
+    dragOffsetRef.current = dx
     setDragOffset(dx)
   }
 
@@ -107,7 +120,7 @@ export default function CalendarPage() {
       touchStart.current = null
       return
     }
-    const offset = dragOffset
+    const offset = dragOffsetRef.current
     touchStart.current = null
 
     if (!dragging.current || Math.abs(offset) < SWIPE_THRESHOLD) {
@@ -172,6 +185,8 @@ export default function CalendarPage() {
         <span className="ml-auto text-xs text-slate-300">左右滑动切换月份</span>
       </div>
 
+      <WeekdayHeader />
+
       <div
         ref={containerRef}
         className="min-h-0 flex-1 overflow-hidden touch-pan-y"
@@ -187,7 +202,9 @@ export default function CalendarPage() {
           ].join(' ')}
           style={{
             transform: trackTransform,
-            transition: animating ? `transform ${ANIMATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)` : 'none',
+            transition: animating
+              ? `transform ${ANIMATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
+              : 'none',
           }}
         >
           <div className="h-full w-1/3 shrink-0 px-0.5">

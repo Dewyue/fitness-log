@@ -26,7 +26,6 @@ function getAnaerobicParts(records: CheckIn[]): BodyPart[] {
   return parts
 }
 
-/** 按当天最早一条记录决定有氧/无氧方块的左右顺序 */
 function getTypeOrder(records: CheckIn[]): WorkoutType[] {
   const sorted = [...records].sort((a, b) => a.createdAt - b.createdAt)
   const order: WorkoutType[] = []
@@ -58,17 +57,17 @@ export default function DayCell({
       type="button"
       onClick={onClick}
       className={[
-        'box-border flex h-full w-full min-h-0 flex-col overflow-hidden rounded-xl p-1.5 text-left transition active:scale-[0.98]',
+        'absolute inset-0 box-border flex flex-col overflow-hidden rounded-xl p-1.5 text-left transition active:scale-[0.98]',
         inMonth
           ? 'bg-white dark:bg-slate-800'
-          : 'bg-slate-100/80 dark:bg-slate-800/50',
+          : 'bg-slate-100 dark:bg-slate-800/60',
         isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
       ].join(' ')}
     >
-      <div className={inMonth ? '' : 'opacity-40'}>
+      <div className={`flex min-h-0 flex-1 flex-col ${inMonth ? '' : 'opacity-45'}`}>
         <span
           className={[
-            'block text-center text-sm font-bold leading-none',
+            'block shrink-0 text-center text-sm font-bold leading-none',
             isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100',
           ].join(' ')}
         >
@@ -76,7 +75,7 @@ export default function DayCell({
         </span>
 
         {typeOrder.length > 0 && (
-          <div className="mt-1.5 flex items-center justify-center gap-1.5">
+          <div className="mt-1.5 flex shrink-0 items-center justify-center gap-1.5">
             {typeOrder.map((type) => (
               <span
                 key={type}
@@ -88,7 +87,7 @@ export default function DayCell({
         )}
 
         {parts.length > 0 && (
-          <div className="mt-1.5 flex min-h-0 flex-wrap content-start justify-center gap-x-1 gap-y-0.5">
+          <div className="mt-1.5 flex min-h-0 flex-1 flex-wrap content-start justify-center gap-x-1 gap-y-0.5 overflow-hidden">
             {parts.map((part) => (
               <span
                 key={part}
