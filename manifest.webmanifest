@@ -1,0 +1,1 @@
+{"name":"健身打卡","short_name":"健身打卡","description":"个人健身打卡与数据可视化","start_url":"/fitness-log/","display":"standalone","background_color":"#f8fafc","theme_color":"#10b981","lang":"zh-CN","scope":"/fitness-log/","icons":[{"src":"favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
