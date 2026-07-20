@@ -28,7 +28,7 @@ export default function App() {
   return (
     <div className="mx-auto flex min-h-full max-w-[430px] flex-col">
       <UpdatePrompt />
-      <main className="flex-1 px-4 pb-24 pt-4">
+      <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-3 pb-24 pt-3">
         <Routes>
           <Route path="/" element={<CalendarPage />} />
           <Route path="/stats" element={<StatsPage />} />

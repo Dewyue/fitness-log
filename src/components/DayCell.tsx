@@ -42,36 +42,36 @@ export default function DayCell({
       type="button"
       onClick={onClick}
       className={[
-        'flex min-h-[72px] flex-col rounded-lg p-1.5 text-left transition active:scale-[0.98]',
+        'flex h-full min-h-[92px] flex-col rounded-xl p-2 text-left transition active:scale-[0.98]',
         inMonth
           ? 'bg-white dark:bg-slate-800'
           : 'bg-transparent opacity-40',
         isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
       ].join(' ')}
     >
-      <div className="mb-1 flex items-center justify-between">
+      <div className="mb-1.5 flex items-center justify-between">
         <span
           className={[
-            'text-xs font-semibold',
-            isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200',
+            'text-base font-bold leading-none',
+            isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100',
           ].join(' ')}
         >
           {day}
         </span>
         {records.length > 0 && (
-          <div className="flex shrink-0 gap-0.5">
-            {hasAerobic && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
-            {hasAnaerobic && <span className="h-2 w-2 rounded-full bg-blue-500" />}
+          <div className="flex shrink-0 gap-1">
+            {hasAerobic && <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />}
+            {hasAnaerobic && <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />}
           </div>
         )}
       </div>
 
       {parts.length > 0 && (
-        <div className="flex flex-1 flex-wrap content-start gap-x-1 gap-y-0.5">
+        <div className="flex flex-1 flex-wrap content-start gap-x-1.5 gap-y-1">
           {parts.map((part) => (
             <span
               key={part}
-              className={`text-[10px] font-semibold leading-tight ${PART_COLORS[part]}`}
+              className={`text-xs font-semibold leading-tight ${PART_COLORS[part]}`}
             >
               {part}
             </span>

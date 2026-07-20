@@ -18,21 +18,25 @@ export default function MonthCalendar({
 }: MonthCalendarProps) {
   const cells = getCalendarCells(year, month)
   const byDate = groupByDate(checkIns)
+  const weeks = Math.ceil(cells.length / 7)
 
   return (
-    <div>
-      <div className="mb-2 grid grid-cols-7 gap-1">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-2 grid grid-cols-7 gap-1.5">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="py-1 text-center text-xs font-medium text-slate-400"
+            className="py-1.5 text-center text-sm font-semibold text-slate-500 dark:text-slate-400"
           >
             {label}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div
+        className="grid min-h-0 flex-1 grid-cols-7 gap-1.5"
+        style={{ gridTemplateRows: `repeat(${weeks}, minmax(0, 1fr))` }}
+      >
         {cells.map((cell) => (
           <DayCell
             key={cell.date}

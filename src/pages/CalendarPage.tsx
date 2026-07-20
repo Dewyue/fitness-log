@@ -134,21 +134,21 @@ export default function CalendarPage() {
   const trackTransform = `translate3d(calc(-100% / 3 + ${dragOffset}px), 0, 0)`
 
   return (
-    <div className="relative space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="relative flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex shrink-0 items-center justify-between">
         <button
           type="button"
           onClick={goPrevMonth}
-          className="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="rounded-lg px-3 py-2 text-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
         >
           ‹
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-bold">{formatMonthLabel(year, month)}</h1>
+          <h1 className="text-xl font-bold tracking-wide">{formatMonthLabel(year, month)}</h1>
           <button
             type="button"
             onClick={goToday}
-            className="text-xs text-emerald-600 dark:text-emerald-400"
+            className="text-sm text-emerald-600 dark:text-emerald-400"
           >
             回到今天
           </button>
@@ -156,25 +156,25 @@ export default function CalendarPage() {
         <button
           type="button"
           onClick={goNextMonth}
-          className="rounded-lg px-3 py-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="rounded-lg px-3 py-2 text-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
         >
           ›
         </button>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-slate-400">
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> 有氧
+      <div className="flex shrink-0 items-center gap-3 text-sm text-slate-400">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> 有氧
         </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-blue-500" /> 无氧
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-blue-500" /> 无氧
         </span>
-        <span className="ml-auto text-[11px] text-slate-300">左右滑动切换月份</span>
+        <span className="ml-auto text-xs text-slate-300">左右滑动切换月份</span>
       </div>
 
       <div
         ref={containerRef}
-        className="overflow-hidden touch-pan-y"
+        className="min-h-0 flex-1 overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -182,7 +182,7 @@ export default function CalendarPage() {
       >
         <div
           className={[
-            'flex w-[300%] will-change-transform',
+            'flex h-full w-[300%] will-change-transform',
             animating || Math.abs(dragOffset) > 8 ? 'pointer-events-none' : '',
           ].join(' ')}
           style={{
@@ -190,7 +190,7 @@ export default function CalendarPage() {
             transition: animating ? `transform ${ANIMATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)` : 'none',
           }}
         >
-          <div className="w-1/3 shrink-0 px-0.5">
+          <div className="h-full w-1/3 shrink-0 px-0.5">
             <MonthCalendar
               year={prev.year}
               month={prev.month}
@@ -198,7 +198,7 @@ export default function CalendarPage() {
               onSelectDate={openDay}
             />
           </div>
-          <div className="w-1/3 shrink-0 px-0.5">
+          <div className="h-full w-1/3 shrink-0 px-0.5">
             <MonthCalendar
               year={year}
               month={month}
@@ -206,7 +206,7 @@ export default function CalendarPage() {
               onSelectDate={openDay}
             />
           </div>
-          <div className="w-1/3 shrink-0 px-0.5">
+          <div className="h-full w-1/3 shrink-0 px-0.5">
             <MonthCalendar
               year={next.year}
               month={next.month}
