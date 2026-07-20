@@ -7,6 +7,7 @@ interface DayCellProps {
   isToday: boolean
   records: CheckIn[]
   onClick: () => void
+  dimmed?: boolean
 }
 
 function getAnaerobicParts(records: CheckIn[]): BodyPart[] {
@@ -48,9 +49,11 @@ export default function DayCell({
   isToday,
   records,
   onClick,
+  dimmed = false,
 }: DayCellProps) {
   const typeOrder = getTypeOrder(records)
   const parts = getAnaerobicParts(records)
+  const muted = dimmed || !inMonth
 
   return (
     <button
@@ -58,17 +61,19 @@ export default function DayCell({
       onClick={onClick}
       className={[
         'box-border flex min-h-[76px] w-full flex-col overflow-hidden rounded-xl p-1.5 text-left transition active:scale-[0.98]',
-        inMonth
-          ? 'bg-white dark:bg-slate-800'
-          : 'bg-slate-100 dark:bg-slate-800/60',
-        isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
+        muted
+          ? 'bg-slate-100 dark:bg-slate-800/60'
+          : 'bg-white dark:bg-slate-800',
+        !dimmed && isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
       ].join(' ')}
     >
-      <div className={inMonth ? '' : 'opacity-45'}>
+      <div className={muted ? 'opacity-40' : ''}>
         <span
           className={[
             'block text-center text-sm font-bold leading-none',
-            isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100',
+            !dimmed && isToday
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-slate-800 dark:text-slate-100',
           ].join(' ')}
         >
           {day}

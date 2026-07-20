@@ -1,11 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DaySheet } from '../components/DaySheet'
 import MonthCalendar, { WeekdayHeader } from '../components/MonthCalendar'
 import { useCheckInsByMonth } from '../hooks/useCheckIns'
 import { formatDate, formatMonthLabel, shiftMonth } from '../lib/dates'
-
-const SWIPE_THRESHOLD = 60
-const ANIMATION_MS = 280
 
 export default function CalendarPage() {
   const now = new Date()
@@ -13,114 +10,101 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [sheetMode, setSheetMode] = useState<'list' | 'add'>('list')
-  const [offset, setOffset] = useState(0)
-  const [withTransition, setWithTransition] = useState(false)
 
-  const startX = useRef(0)
-  const startY = useRef(0)
-  const tracking = useRef(false)
-  const locking = useRef(false)
-  const offsetRef = useRef(0)
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  const settling = useRef(false)
+  const scrollTimer = useRef<number>(0)
   const yearRef = useRef(year)
   const monthRef = useRef(month)
   yearRef.current = year
   monthRef.current = month
 
+  const prev = shiftMonth(year, month, -1)
+  const next = shiftMonth(year, month, 1)
+
+  const { checkIns: prevCheckIns } = useCheckInsByMonth(prev.year, prev.month)
   const { checkIns } = useCheckInsByMonth(year, month)
+  const { checkIns: nextCheckIns } = useCheckInsByMonth(next.year, next.month)
+
   const today = formatDate(new Date())
 
-  const goPrevMonth = () => {
-    if (locking.current) return
-    locking.current = true
-    setWithTransition(true)
-    setOffset(40)
-    offsetRef.current = 40
+  const scrollToCenter = (behavior: ScrollBehavior = 'auto') => {
+    const el = scrollerRef.current
+    if (!el) return
+    el.scrollTo({ top: el.clientHeight, behavior })
+  }
 
+  useEffect(() => {
+    scrollToCenter('auto')
+  }, [])
+
+  const applyMonth = (dir: -1 | 1) => {
+    const target = shiftMonth(yearRef.current, monthRef.current, dir)
+    setYear(target.year)
+    setMonth(target.month)
+    requestAnimationFrame(() => scrollToCenter('auto'))
+  }
+
+  const goPrevMonth = () => {
+    if (settling.current) return
+    settling.current = true
+    applyMonth(-1)
     window.setTimeout(() => {
-      const target = shiftMonth(yearRef.current, monthRef.current, -1)
-      setWithTransition(false)
-      setOffset(0)
-      offsetRef.current = 0
-      setYear(target.year)
-      setMonth(target.month)
-      locking.current = false
-    }, ANIMATION_MS)
+      settling.current = false
+    }, 80)
   }
 
   const goNextMonth = () => {
-    if (locking.current) return
-    locking.current = true
-    setWithTransition(true)
-    setOffset(-40)
-    offsetRef.current = -40
-
+    if (settling.current) return
+    settling.current = true
+    applyMonth(1)
     window.setTimeout(() => {
-      const target = shiftMonth(yearRef.current, monthRef.current, 1)
-      setWithTransition(false)
-      setOffset(0)
-      offsetRef.current = 0
-      setYear(target.year)
-      setMonth(target.month)
-      locking.current = false
-    }, ANIMATION_MS)
+      settling.current = false
+    }, 80)
   }
 
   const goToday = () => {
-    if (locking.current) return
     const d = new Date()
-    setWithTransition(false)
-    setOffset(0)
-    offsetRef.current = 0
     setYear(d.getFullYear())
     setMonth(d.getMonth() + 1)
+    requestAnimationFrame(() => scrollToCenter('auto'))
   }
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    if (locking.current) return
-    const t = e.touches[0]
-    startX.current = t.clientX
-    startY.current = t.clientY
-    tracking.current = false
-    setWithTransition(false)
+  const handleScroll = () => {
+    if (settling.current) return
+    const el = scrollerRef.current
+    if (!el) return
+
+    window.clearTimeout(scrollTimer.current)
+    scrollTimer.current = window.setTimeout(() => {
+      const page = el.clientHeight || 1
+      const index = Math.round(el.scrollTop / page)
+
+      if (index <= 0) {
+        settling.current = true
+        applyMonth(-1)
+        window.setTimeout(() => {
+          settling.current = false
+        }, 80)
+      } else if (index >= 2) {
+        settling.current = true
+        applyMonth(1)
+        window.setTimeout(() => {
+          settling.current = false
+        }, 80)
+      } else if (Math.abs(el.scrollTop - page) > 2) {
+        scrollToCenter('smooth')
+      }
+    }, 70)
   }
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (locking.current) return
-    const t = e.touches[0]
-    const dx = t.clientX - startX.current
-    const dy = t.clientY - startY.current
-
-    if (!tracking.current) {
-      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return
-      if (Math.abs(dy) >= Math.abs(dx)) return
-      tracking.current = true
-    }
-
-    const clamped = Math.max(-80, Math.min(80, dx))
-    offsetRef.current = clamped
-    setOffset(clamped)
-  }
-
-  const onTouchEnd = () => {
-    if (locking.current) return
-    const dx = offsetRef.current
-
-    if (!tracking.current || Math.abs(dx) < SWIPE_THRESHOLD) {
-      setWithTransition(true)
-      setOffset(0)
-      offsetRef.current = 0
-      window.setTimeout(() => setWithTransition(false), ANIMATION_MS)
-      tracking.current = false
-      return
-    }
-
-    if (dx < 0) goNextMonth()
-    else goPrevMonth()
-    tracking.current = false
+  const openDay = (date: string) => {
+    setSheetMode('list')
+    setSelectedDate(date)
   }
 
   return (
-    <div className="relative space-y-3 pb-8">
+    <div className="space-y-3">
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -155,36 +139,54 @@ export default function CalendarPage() {
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-[3px] bg-blue-500" /> 无氧
         </span>
+        <span className="ml-auto text-xs text-slate-300">上下滑动切换月份</span>
       </div>
 
       <WeekdayHeader />
 
       <div
-        className="overflow-hidden"
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onTouchCancel={onTouchEnd}
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="h-[calc(100dvh-12.5rem)] snap-y snap-mandatory overflow-y-auto overscroll-y-contain rounded-xl"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <div
-          style={{
-            transform: `translate3d(${offset}px, 0, 0)`,
-            opacity: Math.max(0.7, 1 - Math.abs(offset) / 200),
-            transition: withTransition
-              ? `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`
-              : 'none',
-          }}
-        >
+        <section className="box-border h-full snap-start snap-always overflow-hidden py-1">
+          <p className="mb-2 text-center text-xs text-slate-400">
+            {formatMonthLabel(prev.year, prev.month)}
+          </p>
+          <MonthCalendar
+            year={prev.year}
+            month={prev.month}
+            checkIns={prevCheckIns}
+            onSelectDate={openDay}
+            dimmed
+          />
+        </section>
+
+        <section className="box-border h-full snap-start snap-always overflow-hidden py-1">
+          <p className="mb-2 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            {formatMonthLabel(year, month)}
+          </p>
           <MonthCalendar
             year={year}
             month={month}
             checkIns={checkIns}
-            onSelectDate={(date) => {
-              setSheetMode('list')
-              setSelectedDate(date)
-            }}
+            onSelectDate={openDay}
           />
-        </div>
+        </section>
+
+        <section className="box-border h-full snap-start snap-always overflow-hidden py-1">
+          <p className="mb-2 text-center text-xs text-slate-400">
+            {formatMonthLabel(next.year, next.month)}
+          </p>
+          <MonthCalendar
+            year={next.year}
+            month={next.month}
+            checkIns={nextCheckIns}
+            onSelectDate={openDay}
+            dimmed
+          />
+        </section>
       </div>
 
       <button
@@ -195,6 +197,7 @@ export default function CalendarPage() {
           setMonth(d.getMonth() + 1)
           setSheetMode('add')
           setSelectedDate(today)
+          requestAnimationFrame(() => scrollToCenter('auto'))
         }}
         aria-label="新增今日打卡"
         className="fixed bottom-24 right-[max(1rem,calc(50%-215px+1rem))] z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-3xl font-light text-white shadow-lg shadow-emerald-500/40 transition active:scale-95"

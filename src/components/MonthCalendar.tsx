@@ -23,6 +23,7 @@ interface MonthCalendarProps {
   month: number
   checkIns: CheckIn[]
   onSelectDate: (date: string) => void
+  dimmed?: boolean
 }
 
 export default function MonthCalendar({
@@ -30,6 +31,7 @@ export default function MonthCalendar({
   month,
   checkIns,
   onSelectDate,
+  dimmed = false,
 }: MonthCalendarProps) {
   const cells = getCalendarCells(year, month)
   const byDate = groupByDate(checkIns)
@@ -43,6 +45,7 @@ export default function MonthCalendar({
           inMonth={cell.inMonth}
           isToday={cell.isToday}
           records={byDate.get(cell.date) ?? []}
+          dimmed={dimmed}
           onClick={() => onSelectDate(cell.date)}
         />
       ))}
