@@ -164,10 +164,10 @@ export default function CalendarPage() {
 
       <div className="flex shrink-0 items-center gap-3 text-sm text-slate-400">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> 有氧
+          <span className="h-3 w-3 rounded-[3px] bg-emerald-500" /> 有氧
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500" /> 无氧
+          <span className="h-3 w-3 rounded-[3px] bg-blue-500" /> 无氧
         </span>
         <span className="ml-auto text-xs text-slate-300">左右滑动切换月份</span>
       </div>
