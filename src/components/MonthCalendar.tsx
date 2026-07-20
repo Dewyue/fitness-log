@@ -5,7 +5,7 @@ import DayCell from './DayCell'
 
 export function WeekdayHeader() {
   return (
-    <div className="grid shrink-0 grid-cols-7 gap-1.5">
+    <div className="grid grid-cols-7 gap-1.5">
       {WEEKDAY_LABELS.map((label) => (
         <div
           key={label}
@@ -35,17 +35,16 @@ export default function MonthCalendar({
   const byDate = groupByDate(checkIns)
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-7 grid-rows-6 gap-1.5">
+    <div className="grid grid-cols-7 gap-1.5">
       {cells.map((cell) => (
-        <div key={cell.date} className="relative min-h-0 overflow-hidden">
-          <DayCell
-            day={cell.day}
-            inMonth={cell.inMonth}
-            isToday={cell.isToday}
-            records={byDate.get(cell.date) ?? []}
-            onClick={() => onSelectDate(cell.date)}
-          />
-        </div>
+        <DayCell
+          key={cell.date}
+          day={cell.day}
+          inMonth={cell.inMonth}
+          isToday={cell.isToday}
+          records={byDate.get(cell.date) ?? []}
+          onClick={() => onSelectDate(cell.date)}
+        />
       ))}
     </div>
   )

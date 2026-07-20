@@ -16,53 +16,51 @@ export default function CalendarPage() {
   const [offset, setOffset] = useState(0)
   const [withTransition, setWithTransition] = useState(false)
 
-  const containerRef = useRef<HTMLDivElement>(null)
   const startX = useRef(0)
   const startY = useRef(0)
   const tracking = useRef(false)
   const locking = useRef(false)
   const offsetRef = useRef(0)
+  const yearRef = useRef(year)
+  const monthRef = useRef(month)
+  yearRef.current = year
+  monthRef.current = month
 
   const { checkIns } = useCheckInsByMonth(year, month)
   const today = formatDate(new Date())
 
-  const setMonthSafely = (nextYear: number, nextMonth: number) => {
-    setYear(nextYear)
-    setMonth(nextMonth)
-  }
-
   const goPrevMonth = () => {
     if (locking.current) return
-    const width = containerRef.current?.clientWidth || 1
     locking.current = true
     setWithTransition(true)
-    setOffset(width)
-    offsetRef.current = width
+    setOffset(40)
+    offsetRef.current = 40
 
     window.setTimeout(() => {
-      const target = shiftMonth(year, month, -1)
+      const target = shiftMonth(yearRef.current, monthRef.current, -1)
       setWithTransition(false)
       setOffset(0)
       offsetRef.current = 0
-      setMonthSafely(target.year, target.month)
+      setYear(target.year)
+      setMonth(target.month)
       locking.current = false
     }, ANIMATION_MS)
   }
 
   const goNextMonth = () => {
     if (locking.current) return
-    const width = containerRef.current?.clientWidth || 1
     locking.current = true
     setWithTransition(true)
-    setOffset(-width)
-    offsetRef.current = -width
+    setOffset(-40)
+    offsetRef.current = -40
 
     window.setTimeout(() => {
-      const target = shiftMonth(year, month, 1)
+      const target = shiftMonth(yearRef.current, monthRef.current, 1)
       setWithTransition(false)
       setOffset(0)
       offsetRef.current = 0
-      setMonthSafely(target.year, target.month)
+      setYear(target.year)
+      setMonth(target.month)
       locking.current = false
     }, ANIMATION_MS)
   }
@@ -73,7 +71,8 @@ export default function CalendarPage() {
     setWithTransition(false)
     setOffset(0)
     offsetRef.current = 0
-    setMonthSafely(d.getFullYear(), d.getMonth() + 1)
+    setYear(d.getFullYear())
+    setMonth(d.getMonth() + 1)
   }
 
   const onTouchStart = (e: React.TouchEvent) => {
@@ -97,8 +96,9 @@ export default function CalendarPage() {
       tracking.current = true
     }
 
-    offsetRef.current = dx
-    setOffset(dx)
+    const clamped = Math.max(-80, Math.min(80, dx))
+    offsetRef.current = clamped
+    setOffset(clamped)
   }
 
   const onTouchEnd = () => {
@@ -120,8 +120,8 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex shrink-0 items-center justify-between">
+    <div className="relative space-y-3 pb-8">
+      <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={goPrevMonth}
@@ -148,7 +148,7 @@ export default function CalendarPage() {
         </button>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3 text-sm text-slate-400">
+      <div className="flex items-center gap-3 text-sm text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-[3px] bg-emerald-500" /> 有氧
         </span>
@@ -160,18 +160,16 @@ export default function CalendarPage() {
       <WeekdayHeader />
 
       <div
-        ref={containerRef}
-        className="min-h-0 flex-1 overflow-hidden"
+        className="overflow-hidden"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
       >
         <div
-          className="h-full will-change-transform"
           style={{
             transform: `translate3d(${offset}px, 0, 0)`,
-            opacity: Math.max(0.55, 1 - Math.abs(offset) / 600),
+            opacity: Math.max(0.7, 1 - Math.abs(offset) / 200),
             transition: withTransition
               ? `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`
               : 'none',
@@ -193,7 +191,8 @@ export default function CalendarPage() {
         type="button"
         onClick={() => {
           const d = new Date()
-          setMonthSafely(d.getFullYear(), d.getMonth() + 1)
+          setYear(d.getFullYear())
+          setMonth(d.getMonth() + 1)
           setSheetMode('add')
           setSelectedDate(today)
         }}

@@ -26,9 +26,9 @@ function NavItem({ to, label, icon }: { to: string; label: string; icon: string 
 
 export default function App() {
   return (
-    <div className="mx-auto flex min-h-full max-w-[430px] flex-col">
+    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col">
       <UpdatePrompt />
-      <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col px-3 pb-24 pt-3">
+      <main className="w-full flex-1 px-3 pb-28 pt-3">
         <Routes>
           <Route path="/" element={<CalendarPage />} />
           <Route path="/stats" element={<StatsPage />} />
