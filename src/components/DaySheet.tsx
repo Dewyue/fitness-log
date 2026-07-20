@@ -294,7 +294,7 @@ export function DaySheet({ date, onClose, initialMode = 'list' }: DaySheetProps)
         className="absolute inset-0"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl dark:bg-slate-900 sm:rounded-2xl">
+      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-slate-900">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold">
