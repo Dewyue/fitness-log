@@ -1,16 +1,22 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
 export default function UpdatePrompt() {
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(registration) {
-      if (registration) {
-        window.setInterval(() => registration.update(), 60 * 60 * 1000)
+  const registration = useRegisterSW({
+    onRegistered(reg) {
+      if (reg) {
+        window.setInterval(() => {
+          void reg.update()
+        }, 60 * 60 * 1000)
       }
     },
+    onRegisterError(error) {
+      console.warn('SW register failed:', error)
+    },
   })
+
+  const needRefresh = Boolean(registration?.needRefresh?.[0])
+  const setNeedRefresh = registration?.needRefresh?.[1]
+  const updateServiceWorker = registration?.updateServiceWorker
 
   if (!needRefresh) return null
 
@@ -20,14 +26,14 @@ export default function UpdatePrompt() {
       <div className="mt-2 flex gap-2">
         <button
           type="button"
-          onClick={() => updateServiceWorker(true)}
+          onClick={() => updateServiceWorker?.(true)}
           className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-emerald-700"
         >
           立即刷新
         </button>
         <button
           type="button"
-          onClick={() => setNeedRefresh(false)}
+          onClick={() => setNeedRefresh?.(false)}
           className="rounded-lg px-3 py-1.5 text-xs text-emerald-100"
         >
           稍后

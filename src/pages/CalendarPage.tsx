@@ -4,8 +4,8 @@ import MonthCalendar, { WeekdayHeader } from '../components/MonthCalendar'
 import { useCheckInsByMonth } from '../hooks/useCheckIns'
 import { formatDate, formatMonthLabel, shiftMonth } from '../lib/dates'
 
-const SWIPE_THRESHOLD = 56
-const ANIMATION_MS = 300
+const SWIPE_THRESHOLD = 60
+const ANIMATION_MS = 280
 
 export default function CalendarPage() {
   const now = new Date()
@@ -13,138 +13,111 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [sheetMode, setSheetMode] = useState<'list' | 'add'>('list')
-
-  const [dragOffset, setDragOffset] = useState(0)
-  const [animating, setAnimating] = useState(false)
+  const [offset, setOffset] = useState(0)
+  const [withTransition, setWithTransition] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const touchStart = useRef<{ x: number; y: number } | null>(null)
-  const dragging = useRef(false)
-  const pendingDir = useRef<'prev' | 'next' | null>(null)
-  const locked = useRef(false)
-  const dragOffsetRef = useRef(0)
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const tracking = useRef(false)
+  const locking = useRef(false)
+  const offsetRef = useRef(0)
 
-  const prev = shiftMonth(year, month, -1)
-  const next = shiftMonth(year, month, 1)
-
-  const { checkIns: prevCheckIns } = useCheckInsByMonth(prev.year, prev.month)
   const { checkIns } = useCheckInsByMonth(year, month)
-  const { checkIns: nextCheckIns } = useCheckInsByMonth(next.year, next.month)
-
   const today = formatDate(new Date())
 
-  const finishSwitch = (dir: 'prev' | 'next') => {
-    const target = shiftMonth(year, month, dir === 'next' ? 1 : -1)
-    // 先关掉动画，再同时复位偏移并换月，避免中间闪一帧旧内容
-    setAnimating(false)
-    setDragOffset(0)
-    dragOffsetRef.current = 0
-    setYear(target.year)
-    setMonth(target.month)
-    locked.current = false
-    dragging.current = false
-    pendingDir.current = null
+  const setMonthSafely = (nextYear: number, nextMonth: number) => {
+    setYear(nextYear)
+    setMonth(nextMonth)
   }
 
-  const animateTo = (dir: 'prev' | 'next' | 'cancel') => {
-    if (locked.current) return
-    const width = containerRef.current?.clientWidth ?? 0
-    locked.current = true
-    setAnimating(true)
-
-    if (dir === 'cancel') {
-      pendingDir.current = null
-      setDragOffset(0)
-      dragOffsetRef.current = 0
-      window.setTimeout(() => {
-        setAnimating(false)
-        locked.current = false
-        dragging.current = false
-      }, ANIMATION_MS)
-      return
-    }
-
-    pendingDir.current = dir
-    const targetOffset = dir === 'next' ? -width : width
-    setDragOffset(targetOffset)
-    dragOffsetRef.current = targetOffset
+  const goPrevMonth = () => {
+    if (locking.current) return
+    const width = containerRef.current?.clientWidth || 1
+    locking.current = true
+    setWithTransition(true)
+    setOffset(width)
+    offsetRef.current = width
 
     window.setTimeout(() => {
-      if (pendingDir.current) {
-        finishSwitch(pendingDir.current)
-      }
+      const target = shiftMonth(year, month, -1)
+      setWithTransition(false)
+      setOffset(0)
+      offsetRef.current = 0
+      setMonthSafely(target.year, target.month)
+      locking.current = false
     }, ANIMATION_MS)
   }
 
-  const goPrevMonth = () => animateTo('prev')
-  const goNextMonth = () => animateTo('next')
+  const goNextMonth = () => {
+    if (locking.current) return
+    const width = containerRef.current?.clientWidth || 1
+    locking.current = true
+    setWithTransition(true)
+    setOffset(-width)
+    offsetRef.current = -width
+
+    window.setTimeout(() => {
+      const target = shiftMonth(year, month, 1)
+      setWithTransition(false)
+      setOffset(0)
+      offsetRef.current = 0
+      setMonthSafely(target.year, target.month)
+      locking.current = false
+    }, ANIMATION_MS)
+  }
 
   const goToday = () => {
-    if (locked.current) return
+    if (locking.current) return
     const d = new Date()
-    setYear(d.getFullYear())
-    setMonth(d.getMonth() + 1)
-    setDragOffset(0)
-    dragOffsetRef.current = 0
+    setWithTransition(false)
+    setOffset(0)
+    offsetRef.current = 0
+    setMonthSafely(d.getFullYear(), d.getMonth() + 1)
   }
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (locked.current) return
-    const touch = e.touches[0]
-    touchStart.current = { x: touch.clientX, y: touch.clientY }
-    dragging.current = false
-    setAnimating(false)
+  const onTouchStart = (e: React.TouchEvent) => {
+    if (locking.current) return
+    const t = e.touches[0]
+    startX.current = t.clientX
+    startY.current = t.clientY
+    tracking.current = false
+    setWithTransition(false)
   }
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart.current || locked.current) return
-    const touch = e.touches[0]
-    const dx = touch.clientX - touchStart.current.x
-    const dy = touch.clientY - touchStart.current.y
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (locking.current) return
+    const t = e.touches[0]
+    const dx = t.clientX - startX.current
+    const dy = t.clientY - startY.current
 
-    if (!dragging.current) {
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
-      if (Math.abs(dy) >= Math.abs(dx)) {
-        touchStart.current = null
-        return
-      }
-      dragging.current = true
+    if (!tracking.current) {
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return
+      if (Math.abs(dy) >= Math.abs(dx)) return
+      tracking.current = true
     }
 
-    dragOffsetRef.current = dx
-    setDragOffset(dx)
+    offsetRef.current = dx
+    setOffset(dx)
   }
 
-  const handleTouchEnd = () => {
-    if (!touchStart.current || locked.current) {
-      touchStart.current = null
+  const onTouchEnd = () => {
+    if (locking.current) return
+    const dx = offsetRef.current
+
+    if (!tracking.current || Math.abs(dx) < SWIPE_THRESHOLD) {
+      setWithTransition(true)
+      setOffset(0)
+      offsetRef.current = 0
+      window.setTimeout(() => setWithTransition(false), ANIMATION_MS)
+      tracking.current = false
       return
     }
-    const offset = dragOffsetRef.current
-    touchStart.current = null
 
-    if (!dragging.current || Math.abs(offset) < SWIPE_THRESHOLD) {
-      animateTo('cancel')
-      return
-    }
-
-    animateTo(offset < 0 ? 'next' : 'prev')
+    if (dx < 0) goNextMonth()
+    else goPrevMonth()
+    tracking.current = false
   }
-
-  const openDay = (date: string) => {
-    setSheetMode('list')
-    setSelectedDate(date)
-  }
-
-  const openTodayAdd = () => {
-    const d = new Date()
-    setYear(d.getFullYear())
-    setMonth(d.getMonth() + 1)
-    setSheetMode('add')
-    setSelectedDate(today)
-  }
-
-  const trackTransform = `translate3d(calc(-100% / 3 + ${dragOffset}px), 0, 0)`
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col gap-3">
@@ -182,61 +155,48 @@ export default function CalendarPage() {
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-[3px] bg-blue-500" /> 无氧
         </span>
-        <span className="ml-auto text-xs text-slate-300">左右滑动切换月份</span>
       </div>
 
       <WeekdayHeader />
 
       <div
         ref={containerRef}
-        className="min-h-0 flex-1 overflow-hidden touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        className="min-h-0 flex-1 overflow-hidden"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
       >
         <div
-          className={[
-            'flex h-full w-[300%] will-change-transform',
-            animating || Math.abs(dragOffset) > 8 ? 'pointer-events-none' : '',
-          ].join(' ')}
+          className="h-full will-change-transform"
           style={{
-            transform: trackTransform,
-            transition: animating
-              ? `transform ${ANIMATION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
+            transform: `translate3d(${offset}px, 0, 0)`,
+            opacity: Math.max(0.55, 1 - Math.abs(offset) / 600),
+            transition: withTransition
+              ? `transform ${ANIMATION_MS}ms ease-out, opacity ${ANIMATION_MS}ms ease-out`
               : 'none',
           }}
         >
-          <div className="h-full w-1/3 shrink-0 px-0.5">
-            <MonthCalendar
-              year={prev.year}
-              month={prev.month}
-              checkIns={prevCheckIns}
-              onSelectDate={openDay}
-            />
-          </div>
-          <div className="h-full w-1/3 shrink-0 px-0.5">
-            <MonthCalendar
-              year={year}
-              month={month}
-              checkIns={checkIns}
-              onSelectDate={openDay}
-            />
-          </div>
-          <div className="h-full w-1/3 shrink-0 px-0.5">
-            <MonthCalendar
-              year={next.year}
-              month={next.month}
-              checkIns={nextCheckIns}
-              onSelectDate={openDay}
-            />
-          </div>
+          <MonthCalendar
+            year={year}
+            month={month}
+            checkIns={checkIns}
+            onSelectDate={(date) => {
+              setSheetMode('list')
+              setSelectedDate(date)
+            }}
+          />
         </div>
       </div>
 
       <button
         type="button"
-        onClick={openTodayAdd}
+        onClick={() => {
+          const d = new Date()
+          setMonthSafely(d.getFullYear(), d.getMonth() + 1)
+          setSheetMode('add')
+          setSelectedDate(today)
+        }}
         aria-label="新增今日打卡"
         className="fixed bottom-24 right-[max(1rem,calc(50%-215px+1rem))] z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-3xl font-light text-white shadow-lg shadow-emerald-500/40 transition active:scale-95"
       >
