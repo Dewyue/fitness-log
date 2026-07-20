@@ -59,7 +59,7 @@ export function getCalendarCells(year: number, month: number): CalendarCell[] {
     })
   }
 
-  const trailing = (7 - (cells.length % 7)) % 7
+  const trailing = 42 - cells.length
   for (let i = 1; i <= trailing; i++) {
     const date = new Date(year, month, i)
     const dateStr = formatDate(date)

@@ -58,46 +58,48 @@ export default function DayCell({
       type="button"
       onClick={onClick}
       className={[
-        'flex h-full min-h-0 flex-col overflow-hidden rounded-xl p-1.5 text-left transition active:scale-[0.98]',
+        'box-border flex h-full w-full min-h-0 flex-col overflow-hidden rounded-xl p-1.5 text-left transition active:scale-[0.98]',
         inMonth
           ? 'bg-white dark:bg-slate-800'
-          : 'bg-transparent opacity-40',
+          : 'bg-slate-100/80 dark:bg-slate-800/50',
         isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
       ].join(' ')}
     >
-      <span
-        className={[
-          'block text-center text-sm font-bold leading-none',
-          isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100',
-        ].join(' ')}
-      >
-        {day}
-      </span>
+      <div className={inMonth ? '' : 'opacity-40'}>
+        <span
+          className={[
+            'block text-center text-sm font-bold leading-none',
+            isToday ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-800 dark:text-slate-100',
+          ].join(' ')}
+        >
+          {day}
+        </span>
 
-      {typeOrder.length > 0 && (
-        <div className="mt-1.5 flex items-center justify-center gap-1.5">
-          {typeOrder.map((type) => (
-            <span
-              key={type}
-              className={`h-3 w-3 rounded-[3px] ${TYPE_STYLE[type]}`}
-              title={type === 'aerobic' ? '有氧' : '无氧'}
-            />
-          ))}
-        </div>
-      )}
+        {typeOrder.length > 0 && (
+          <div className="mt-1.5 flex items-center justify-center gap-1.5">
+            {typeOrder.map((type) => (
+              <span
+                key={type}
+                className={`h-3 w-3 rounded-[3px] ${TYPE_STYLE[type]}`}
+                title={type === 'aerobic' ? '有氧' : '无氧'}
+              />
+            ))}
+          </div>
+        )}
 
-      {parts.length > 0 && (
-        <div className="mt-1.5 flex min-h-0 flex-1 flex-wrap content-start justify-center gap-x-1 gap-y-0.5 overflow-hidden">
-          {parts.map((part) => (
-            <span
-              key={part}
-              className={`text-[11px] font-semibold leading-tight ${PART_COLORS[part]}`}
-            >
-              {part}
-            </span>
-          ))}
-        </div>
-      )}
+        {parts.length > 0 && (
+          <div className="mt-1.5 flex min-h-0 flex-wrap content-start justify-center gap-x-1 gap-y-0.5">
+            {parts.map((part) => (
+              <span
+                key={part}
+                className={`text-[11px] font-semibold leading-tight ${PART_COLORS[part]}`}
+              >
+                {part}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </button>
   )
 }
