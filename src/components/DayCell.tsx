@@ -51,9 +51,12 @@ export default function DayCell({
   onClick,
   dimmed = false,
 }: DayCellProps) {
+  if (!inMonth) {
+    return <div className="min-h-[76px]" aria-hidden />
+  }
+
   const typeOrder = getTypeOrder(records)
   const parts = getAnaerobicParts(records)
-  const muted = dimmed || !inMonth
 
   return (
     <button
@@ -61,13 +64,13 @@ export default function DayCell({
       onClick={onClick}
       className={[
         'box-border flex min-h-[76px] w-full flex-col overflow-hidden rounded-xl p-1.5 text-left transition active:scale-[0.98]',
-        muted
+        dimmed
           ? 'bg-slate-100 dark:bg-slate-800/60'
           : 'bg-white dark:bg-slate-800',
         !dimmed && isToday ? 'ring-2 ring-emerald-500 ring-offset-1 dark:ring-offset-slate-900' : '',
       ].join(' ')}
     >
-      <div className={muted ? 'opacity-40' : ''}>
+      <div className={dimmed ? 'opacity-40' : ''}>
         <span
           className={[
             'block text-center text-sm font-bold leading-none',

@@ -1,101 +1,218 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import DayCell from '../components/DayCell'
 import { DaySheet } from '../components/DaySheet'
-import MonthCalendar, { WeekdayHeader } from '../components/MonthCalendar'
-import { useCheckInsByMonth } from '../hooks/useCheckIns'
+import { WeekdayHeader } from '../components/MonthCalendar'
+import { groupByDate, useCheckInsByMonth } from '../hooks/useCheckIns'
 import { formatDate, formatMonthLabel, shiftMonth } from '../lib/dates'
+import type { CheckIn } from '../types'
+
+const RANGE = 8
+
+function monthKey(year: number, month: number) {
+  return `${year}-${month}`
+}
+
+type DayItem = {
+  date: string
+  day: number
+  year: number
+  month: number
+  spacer: boolean
+}
+
+function buildContinuousDays(start: { year: number; month: number }, count: number) {
+  const days: Omit<DayItem, 'spacer'>[] = []
+  for (let i = 0; i < count; i++) {
+    const { year, month } = shiftMonth(start.year, start.month, i)
+    const last = new Date(year, month, 0).getDate()
+    for (let day = 1; day <= last; day++) {
+      days.push({
+        date: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+        day,
+        year,
+        month,
+      })
+    }
+  }
+  return days
+}
+
+function padToWeeks(days: Omit<DayItem, 'spacer'>[]): DayItem[] {
+  if (days.length === 0) return []
+
+  const first = new Date(days[0].date + 'T12:00:00')
+  const lead = (first.getDay() + 6) % 7
+  const leading: DayItem[] = Array.from({ length: lead }, (_, i) => {
+    const d = new Date(first)
+    d.setDate(first.getDate() - lead + i)
+    return {
+      date: formatDate(d),
+      day: d.getDate(),
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      spacer: true,
+    }
+  })
+
+  const last = new Date(days[days.length - 1].date + 'T12:00:00')
+  const trailCount = (7 - ((lead + days.length) % 7)) % 7
+  const trailing: DayItem[] = Array.from({ length: trailCount }, (_, i) => {
+    const d = new Date(last)
+    d.setDate(last.getDate() + i + 1)
+    return {
+      date: formatDate(d),
+      day: d.getDate(),
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      spacer: true,
+    }
+  })
+
+  return [
+    ...leading,
+    ...days.map((d) => ({ ...d, spacer: false })),
+    ...trailing,
+  ]
+}
+
+function MonthData({
+  year,
+  month,
+  onData,
+}: {
+  year: number
+  month: number
+  onData: (key: string, records: CheckIn[]) => void
+}) {
+  const { checkIns } = useCheckInsByMonth(year, month)
+  useEffect(() => {
+    onData(monthKey(year, month), checkIns)
+  }, [checkIns, year, month, onData])
+  return null
+}
 
 export default function CalendarPage() {
   const now = new Date()
+  const rangeStart = useMemo(
+    () => shiftMonth(now.getFullYear(), now.getMonth() + 1, -RANGE),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  )
+
+  const months = useMemo(() => {
+    const list: { year: number; month: number; key: string }[] = []
+    for (let i = 0; i <= RANGE * 2; i++) {
+      const m = shiftMonth(rangeStart.year, rangeStart.month, i)
+      list.push({ year: m.year, month: m.month, key: monthKey(m.year, m.month) })
+    }
+    return list
+  }, [rangeStart])
+
+  const continuousDays = useMemo(
+    () => padToWeeks(buildContinuousDays(rangeStart, RANGE * 2 + 1)),
+    [rangeStart],
+  )
+
+  const weeks = useMemo(() => {
+    const rows: (typeof continuousDays)[] = []
+    for (let i = 0; i < continuousDays.length; i += 7) {
+      rows.push(continuousDays.slice(i, i + 7))
+    }
+    return rows
+  }, [continuousDays])
+
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [sheetMode, setSheetMode] = useState<'list' | 'add'>('list')
+  const [byMonth, setByMonth] = useState<Record<string, CheckIn[]>>({})
 
   const scrollerRef = useRef<HTMLDivElement>(null)
-  const settling = useRef(false)
-  const scrollTimer = useRef<number>(0)
-  const yearRef = useRef(year)
-  const monthRef = useRef(month)
-  yearRef.current = year
-  monthRef.current = month
-
-  const prev = shiftMonth(year, month, -1)
-  const next = shiftMonth(year, month, 1)
-
-  const { checkIns: prevCheckIns } = useCheckInsByMonth(prev.year, prev.month)
-  const { checkIns } = useCheckInsByMonth(year, month)
-  const { checkIns: nextCheckIns } = useCheckInsByMonth(next.year, next.month)
-
+  const weekRefs = useRef(new Map<string, HTMLElement>())
+  const skipping = useRef(false)
   const today = formatDate(new Date())
 
-  const scrollToCenter = (behavior: ScrollBehavior = 'auto') => {
-    const el = scrollerRef.current
+  const handleMonthData = useMemo(
+    () => (key: string, records: CheckIn[]) => {
+      setByMonth((prev) => {
+        if (prev[key] === records) return prev
+        return { ...prev, [key]: records }
+      })
+    },
+    [],
+  )
+
+  const allByDate = useMemo(() => {
+    const all: CheckIn[] = []
+    for (const m of months) {
+      const records = byMonth[m.key]
+      if (records) all.push(...records)
+    }
+    return groupByDate(all)
+  }, [byMonth, months])
+
+  const scrollToMonth = (y: number, m: number, behavior: ScrollBehavior = 'smooth') => {
+    const el = weekRefs.current.get(monthKey(y, m))
     if (!el) return
-    el.scrollTo({ top: el.clientHeight, behavior })
+    skipping.current = true
+    el.scrollIntoView({ behavior, block: 'start' })
+    window.setTimeout(() => {
+      skipping.current = false
+    }, behavior === 'smooth' ? 360 : 50)
   }
 
   useEffect(() => {
-    scrollToCenter('auto')
+    requestAnimationFrame(() => scrollToMonth(year, month, 'auto'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const applyMonth = (dir: -1 | 1) => {
-    const target = shiftMonth(yearRef.current, monthRef.current, dir)
-    setYear(target.year)
-    setMonth(target.month)
-    requestAnimationFrame(() => scrollToCenter('auto'))
-  }
+  useEffect(() => {
+    const root = scrollerRef.current
+    if (!root) return
+
+    const onScroll = () => {
+      if (skipping.current) return
+      const rootTop = root.getBoundingClientRect().top
+      let best: { y: number; m: number; dist: number } | null = null
+
+      for (const [key, el] of weekRefs.current) {
+        const rect = el.getBoundingClientRect()
+        const dist = Math.abs(rect.top - rootTop)
+        const [y, m] = key.split('-').map(Number)
+        if (!best || dist < best.dist) best = { y, m, dist }
+      }
+
+      if (best && (best.y !== year || best.m !== month)) {
+        setYear(best.y)
+        setMonth(best.m)
+      }
+    }
+
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => root.removeEventListener('scroll', onScroll)
+  }, [year, month])
 
   const goPrevMonth = () => {
-    if (settling.current) return
-    settling.current = true
-    applyMonth(-1)
-    window.setTimeout(() => {
-      settling.current = false
-    }, 80)
+    const target = shiftMonth(year, month, -1)
+    setYear(target.year)
+    setMonth(target.month)
+    scrollToMonth(target.year, target.month, 'smooth')
   }
 
   const goNextMonth = () => {
-    if (settling.current) return
-    settling.current = true
-    applyMonth(1)
-    window.setTimeout(() => {
-      settling.current = false
-    }, 80)
+    const target = shiftMonth(year, month, 1)
+    setYear(target.year)
+    setMonth(target.month)
+    scrollToMonth(target.year, target.month, 'smooth')
   }
 
   const goToday = () => {
     const d = new Date()
-    setYear(d.getFullYear())
-    setMonth(d.getMonth() + 1)
-    requestAnimationFrame(() => scrollToCenter('auto'))
-  }
-
-  const handleScroll = () => {
-    if (settling.current) return
-    const el = scrollerRef.current
-    if (!el) return
-
-    window.clearTimeout(scrollTimer.current)
-    scrollTimer.current = window.setTimeout(() => {
-      const page = el.clientHeight || 1
-      const index = Math.round(el.scrollTop / page)
-
-      if (index <= 0) {
-        settling.current = true
-        applyMonth(-1)
-        window.setTimeout(() => {
-          settling.current = false
-        }, 80)
-      } else if (index >= 2) {
-        settling.current = true
-        applyMonth(1)
-        window.setTimeout(() => {
-          settling.current = false
-        }, 80)
-      } else if (Math.abs(el.scrollTop - page) > 2) {
-        scrollToCenter('smooth')
-      }
-    }, 70)
+    const y = d.getFullYear()
+    const m = d.getMonth() + 1
+    setYear(y)
+    setMonth(m)
+    scrollToMonth(y, m, 'smooth')
   }
 
   const openDay = (date: string) => {
@@ -105,6 +222,15 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-3">
+      {months.map((m) => (
+        <MonthData
+          key={m.key}
+          year={m.year}
+          month={m.month}
+          onData={handleMonthData}
+        />
+      ))}
+
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -139,65 +265,64 @@ export default function CalendarPage() {
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-[3px] bg-blue-500" /> 无氧
         </span>
-        <span className="ml-auto text-xs text-slate-300">上下滑动切换月份</span>
+        <span className="ml-auto text-xs text-slate-300">上下滑动浏览</span>
       </div>
 
       <WeekdayHeader />
 
       <div
         ref={scrollerRef}
-        onScroll={handleScroll}
-        className="h-[calc(100dvh-12.5rem)] snap-y snap-mandatory overflow-y-auto overscroll-y-contain rounded-xl"
+        className="h-[calc(100dvh-11.5rem)] space-y-1.5 overflow-y-auto overscroll-y-contain"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <section className="box-border h-full snap-start snap-always overflow-hidden py-1">
-          <p className="mb-2 text-center text-xs text-slate-400">
-            {formatMonthLabel(prev.year, prev.month)}
-          </p>
-          <MonthCalendar
-            year={prev.year}
-            month={prev.month}
-            checkIns={prevCheckIns}
-            onSelectDate={openDay}
-            dimmed
-          />
-        </section>
+        {weeks.map((week, weekIndex) => {
+          const monthStarts = week.filter((c) => !c.spacer && c.day === 1)
 
-        <section className="box-border h-full snap-start snap-always overflow-hidden py-1">
-          <p className="mb-2 text-center text-xs font-medium text-emerald-600 dark:text-emerald-400">
-            {formatMonthLabel(year, month)}
-          </p>
-          <MonthCalendar
-            year={year}
-            month={month}
-            checkIns={checkIns}
-            onSelectDate={openDay}
-          />
-        </section>
-
-        <section className="box-border h-full snap-start snap-always overflow-hidden py-1">
-          <p className="mb-2 text-center text-xs text-slate-400">
-            {formatMonthLabel(next.year, next.month)}
-          </p>
-          <MonthCalendar
-            year={next.year}
-            month={next.month}
-            checkIns={nextCheckIns}
-            onSelectDate={openDay}
-            dimmed
-          />
-        </section>
+          return (
+            <div
+              key={weekIndex}
+              ref={(el) => {
+                for (const start of monthStarts) {
+                  const key = monthKey(start.year, start.month)
+                  if (el) weekRefs.current.set(key, el)
+                  else weekRefs.current.delete(key)
+                }
+              }}
+              className="grid grid-cols-7 gap-1.5"
+            >
+              {week.map((cell) => {
+                if (cell.spacer) {
+                  return <div key={`s-${cell.date}`} className="min-h-[76px]" aria-hidden />
+                }
+                const active = cell.year === year && cell.month === month
+                return (
+                  <DayCell
+                    key={cell.date}
+                    day={cell.day}
+                    inMonth
+                    isToday={cell.date === today}
+                    records={allByDate.get(cell.date) ?? []}
+                    dimmed={!active}
+                    onClick={() => openDay(cell.date)}
+                  />
+                )
+              })}
+            </div>
+          )
+        })}
       </div>
 
       <button
         type="button"
         onClick={() => {
           const d = new Date()
-          setYear(d.getFullYear())
-          setMonth(d.getMonth() + 1)
+          const y = d.getFullYear()
+          const m = d.getMonth() + 1
+          setYear(y)
+          setMonth(m)
           setSheetMode('add')
           setSelectedDate(today)
-          requestAnimationFrame(() => scrollToCenter('auto'))
+          requestAnimationFrame(() => scrollToMonth(y, m, 'auto'))
         }}
         aria-label="新增今日打卡"
         className="fixed bottom-24 right-[max(1rem,calc(50%-215px+1rem))] z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-3xl font-light text-white shadow-lg shadow-emerald-500/40 transition active:scale-95"
