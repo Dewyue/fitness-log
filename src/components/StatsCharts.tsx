@@ -20,7 +20,6 @@ interface StatsChartsProps {
   checkIns: CheckIn[]
   year: number
   month: number
-  expanded: boolean
 }
 
 export function StatsSummary({ checkIns }: { checkIns: CheckIn[] }) {
@@ -81,7 +80,7 @@ function StatCard({
   )
 }
 
-export default function StatsCharts({ checkIns, year, month, expanded }: StatsChartsProps) {
+export default function StatsCharts({ checkIns, year, month }: StatsChartsProps) {
   const typeData = useMemo(() => {
     const aerobic = checkIns.filter((c) => c.type === 'aerobic').length
     const anaerobic = checkIns.filter((c) => c.type === 'anaerobic').length
@@ -118,15 +117,13 @@ export default function StatsCharts({ checkIns, year, month, expanded }: StatsCh
     return daily
   }, [checkIns, year, month])
 
-  if (!expanded) return null
-
   const hasData = checkIns.length > 0
 
   return (
     <div className="space-y-4">
       {!hasData && (
         <p className="rounded-xl bg-slate-50 py-6 text-center text-sm text-slate-400 dark:bg-slate-800/50">
-          本月暂无数据，点击日历日期开始打卡
+          本月暂无数据，去日历页打卡后再来看统计
         </p>
       )}
 

@@ -2,11 +2,13 @@ import { NavLink, Route, Routes } from 'react-router-dom'
 import UpdatePrompt from './components/UpdatePrompt'
 import CalendarPage from './pages/CalendarPage'
 import SettingsPage from './pages/SettingsPage'
+import StatsPage from './pages/StatsPage'
 
 function NavItem({ to, label, icon }: { to: string; label: string; icon: string }) {
   return (
     <NavLink
       to={to}
+      end={to === '/'}
       className={({ isActive }) =>
         [
           'flex flex-1 flex-col items-center gap-1 py-2 text-xs transition',
@@ -29,6 +31,7 @@ export default function App() {
       <main className="flex-1 px-4 pb-24 pt-4">
         <Routes>
           <Route path="/" element={<CalendarPage />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
@@ -36,6 +39,7 @@ export default function App() {
       <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[430px] -translate-x-1/2 border-t border-slate-200 bg-white/95 backdrop-blur dark:border-slate-700 dark:bg-slate-900/95">
         <div className="flex px-2 pb-[env(safe-area-inset-bottom)]">
           <NavItem to="/" label="日历" icon="📅" />
+          <NavItem to="/stats" label="统计" icon="📊" />
           <NavItem to="/settings" label="数据" icon="💾" />
         </div>
       </nav>

@@ -1,14 +1,12 @@
 import { useState } from 'react'
-import { DaySheet } from '../components/DaySheet'
-import MonthCalendar from '../components/MonthCalendar'
+import StatsCharts, { StatsSummary } from '../components/StatsCharts'
 import { useCheckInsByMonth } from '../hooks/useCheckIns'
 import { formatMonthLabel } from '../lib/dates'
 
-export default function CalendarPage() {
+export default function StatsPage() {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
   const { checkIns } = useCheckInsByMonth(year, month)
 
@@ -47,13 +45,13 @@ export default function CalendarPage() {
           ‹
         </button>
         <div className="text-center">
-          <h1 className="text-lg font-bold">{formatMonthLabel(year, month)}</h1>
+          <h1 className="text-lg font-bold">{formatMonthLabel(year, month)} 统计</h1>
           <button
             type="button"
             onClick={goToday}
             className="text-xs text-emerald-600 dark:text-emerald-400"
           >
-            回到今天
+            回到本月
           </button>
         </div>
         <button
@@ -65,25 +63,9 @@ export default function CalendarPage() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-slate-400">
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" /> 有氧
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-blue-500" /> 无氧
-        </span>
-      </div>
+      <StatsSummary checkIns={checkIns} />
 
-      <MonthCalendar
-        year={year}
-        month={month}
-        checkIns={checkIns}
-        onSelectDate={setSelectedDate}
-      />
-
-      {selectedDate && (
-        <DaySheet date={selectedDate} onClose={() => setSelectedDate(null)} />
-      )}
+      <StatsCharts checkIns={checkIns} year={year} month={month} />
     </div>
   )
 }
