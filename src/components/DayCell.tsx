@@ -1,4 +1,5 @@
-import type { CheckIn } from '../types'
+import type { BodyPart, CheckIn } from '../types'
+import { PART_COLORS } from '../types'
 
 interface DayCellProps {
   day: number
@@ -8,16 +9,21 @@ interface DayCellProps {
   onClick: () => void
 }
 
-function summarizeRecords(records: CheckIn[]): { lines: string[]; extra: number } {
-  const anaerobicLines = records
-    .filter((record) => record.type === 'anaerobic')
-    .map((record) => record.parts?.join('·') ?? '')
-    .filter(Boolean)
+function getAnaerobicParts(records: CheckIn[]): BodyPart[] {
+  const seen = new Set<BodyPart>()
+  const parts: BodyPart[] = []
 
-  return {
-    lines: anaerobicLines.slice(0, 2),
-    extra: Math.max(0, anaerobicLines.length - 2),
+  for (const record of records) {
+    if (record.type !== 'anaerobic' || !record.parts) continue
+    for (const part of record.parts) {
+      if (!seen.has(part)) {
+        seen.add(part)
+        parts.push(part)
+      }
+    }
   }
+
+  return parts
 }
 
 export default function DayCell({
@@ -29,7 +35,7 @@ export default function DayCell({
 }: DayCellProps) {
   const hasAerobic = records.some((r) => r.type === 'aerobic')
   const hasAnaerobic = records.some((r) => r.type === 'anaerobic')
-  const { lines: summary, extra } = summarizeRecords(records)
+  const parts = getAnaerobicParts(records)
 
   return (
     <button
@@ -54,26 +60,25 @@ export default function DayCell({
           {day}
         </span>
         {records.length > 0 && (
-          <div className="flex gap-0.5">
+          <div className="flex shrink-0 gap-0.5">
             {hasAerobic && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
             {hasAnaerobic && <span className="h-2 w-2 rounded-full bg-blue-500" />}
           </div>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-0.5 overflow-hidden">
-        {summary.map((line, index) => (
-          <span
-            key={index}
-            className="truncate text-[10px] leading-tight text-slate-500 dark:text-slate-400"
-          >
-            {line}
-          </span>
-        ))}
-        {extra > 0 && (
-          <span className="text-[10px] text-slate-400">+{extra}</span>
-        )}
-      </div>
+      {parts.length > 0 && (
+        <div className="flex flex-1 flex-wrap content-start gap-x-1 gap-y-0.5">
+          {parts.map((part) => (
+            <span
+              key={part}
+              className={`text-[10px] font-semibold leading-tight ${PART_COLORS[part]}`}
+            >
+              {part}
+            </span>
+          ))}
+        </div>
+      )}
     </button>
   )
 }
