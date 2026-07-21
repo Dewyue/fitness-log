@@ -152,17 +152,25 @@ export default function CalendarPage() {
   }, [byMonth, months])
 
   const scrollToMonth = (y: number, m: number, behavior: ScrollBehavior = 'smooth') => {
+    const root = scrollerRef.current
     const el = weekRefs.current.get(monthKey(y, m))
-    if (!el) return
+    if (!root || !el) return
     skipping.current = true
-    el.scrollIntoView({ behavior, block: 'start' })
+    // 只滚日历容器，避免 scrollIntoView 把顶部标题顶出屏幕
+    const nextTop = root.scrollTop + (el.getBoundingClientRect().top - root.getBoundingClientRect().top)
+    root.scrollTo({ top: Math.max(0, nextTop), behavior })
     window.setTimeout(() => {
       skipping.current = false
     }, behavior === 'smooth' ? 360 : 50)
   }
 
   useEffect(() => {
-    requestAnimationFrame(() => scrollToMonth(year, month, 'auto'))
+    window.scrollTo(0, 0)
+    // 等周节点挂上 ref 后再定位到当前月
+    const id = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => scrollToMonth(year, month, 'auto'))
+    })
+    return () => window.cancelAnimationFrame(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

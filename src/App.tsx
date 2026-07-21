@@ -28,7 +28,7 @@ export default function App() {
   return (
     <div className="mx-auto min-h-dvh max-w-[430px]">
       <UpdatePrompt />
-      <main className="w-full px-3 pb-28 pt-3">
+      <main className="w-full px-3 pb-28 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Routes>
           <Route path="/" element={<CalendarPage />} />
           <Route path="/stats" element={<StatsPage />} />
