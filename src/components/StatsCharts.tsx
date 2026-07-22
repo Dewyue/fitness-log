@@ -70,7 +70,7 @@ function StatCard({
         : 'text-slate-900 dark:text-slate-100'
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
+    <div className="rounded-xl bg-white px-3 py-2 dark:bg-slate-800">
       <p className="text-[11px] text-slate-500">{label}</p>
       <p className={`text-lg font-bold ${valueColor}`}>
         {value}
@@ -201,7 +201,7 @@ export default function StatsCharts({ checkIns, year, month }: StatsChartsProps)
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+    <div className="rounded-xl bg-white p-3 dark:bg-slate-800">
       <h3 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">{title}</h3>
       {children}
     </div>
